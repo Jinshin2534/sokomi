@@ -17,6 +17,19 @@ export function insideSole(u, v, shrink = 1) {
   return Math.abs(u - 0.5) <= soleHalfWidth(v) * shrink;
 }
 
+// 靴底座標にそろえた画像のうち、画素中心が靴底テンプレートの外の所を NaN にする(新しい画像を返す)。
+// 背景を局所平均の窓に入れず、靴底の縁の輪郭エッジを模様の入力から外すため。
+export function maskOutsideSole(gray) {
+  const { width: W, height: H, data } = gray;
+  const out = new Float32Array(data);
+  for (let j = 0; j < H; j++) {
+    for (let i = 0; i < W; i++) {
+      if (!insideSole((i + 0.5) / W, (j + 0.5) / H, 1)) out[j * W + i] = NaN;
+    }
+  }
+  return { width: W, height: H, data: out };
+}
+
 // 靴底の縁と背景の境目は強いエッジだがすり減らない。混ぜないよう縮めた輪郭の内側だけ使う。
 export const MASK_SHRINK = 0.9;
 

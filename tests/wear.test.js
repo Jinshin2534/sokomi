@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { soleHalfWidth, insideSole, cellMask } from '../src/lib/mask.js';
+import { soleHalfWidth, insideSole, cellMask, maskOutsideSole } from '../src/lib/mask.js';
 import { cellWear } from '../src/lib/wear.js';
 import { REGIONS, aggregate } from '../src/lib/regions.js';
 import { wearColor } from '../src/lib/color.js';
@@ -36,12 +36,32 @@ describe('靴底テンプレート', () => {
   });
 });
 
+describe('maskOutsideSole', () => {
+  it('画素中心が靴底テンプレートの外なら NaN、内側はそのまま、元の画像は変えない', () => {
+    const W = 120, H = 300;
+    const g = { width: W, height: H, data: new Float32Array(W * H).fill(100) };
+    const m = maskOutsideSole(g);
+    expect(m.width).toBe(W);
+    expect(m.height).toBe(H);
+    expect(Number.isNaN(m.data[0])).toBe(true);                    // 左上の角
+    expect(Number.isNaN(m.data[290 * W + 2])).toBe(true);          // かかと付近の内側の外
+    expect(m.data[150 * W + 60]).toBe(100);                         // 中央
+    expect(g.data[0]).toBe(100);
+    let wrong = 0;
+    for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) {
+      const inside = insideSole((i + 0.5) / W, (j + 0.5) / H, 1);
+      if (Number.isNaN(m.data[j * W + i]) === inside) wrong++;
+    }
+    expect(wrong).toBe(0);
+  });
+});
+
 describe('cellWear', () => {
-  it('1 − 今/基準、増えたら0、模様が無い基準・欠損・靴底外は null', () => {
+  it('1 − 今/基準 をそのまま返す(増えたら負)。模様が無い基準・欠損・靴底外は null', () => {
     const base = Float64Array.from([1, 1, 0.01, 1, 1]);
     const now = Float64Array.from([0.5, 2, 0.01, NaN, 0]);
     const inSole = [true, true, true, true, false];
-    expect(cellWear(base, now, inSole)).toEqual([0.5, 0, null, null, null]);
+    expect(cellWear(base, now, inSole)).toEqual([0.5, -1, null, null, null]);
   });
 
   it('基準が全部平らなら全部 null', () => {
@@ -70,6 +90,19 @@ describe('aggregate', () => {
     expect(byId.heelOut.coverage).toBe(1);
     expect(res.overall).toBeCloseTo((60 * 0.9 + 300 * 0.1) / 360);
     expect(res.regions.map((r) => r.label)).toEqual(['つま先', '母趾球', '小趾側', '土踏まず', 'かかと内', 'かかと外']);
+  });
+
+  it('±の揺れは平均で打ち消し合い、平均してから 0〜1 に収める', () => {
+    const noise = all.map((_, i) => (i % 2 ? 0.1 : -0.1));
+    const res = aggregate(noise, all, cols, rows);
+    expect(res.overall).toBeCloseTo(0, 9);
+    for (const r of res.regions) expect(Math.abs(r.mean)).toBeLessThan(0.02);
+    const neg = aggregate(all.map(() => -0.3), all, cols, rows);
+    expect(neg.overall).toBe(0);
+    expect(neg.regions.every((r) => r.mean === 0)).toBe(true);
+    const over = aggregate(all.map(() => 1.4), all, cols, rows);
+    expect(over.overall).toBe(1);
+    expect(over.regions.every((r) => r.mean === 1)).toBe(true);
   });
 
   it('判定可能が 30% 未満の部位は null', () => {

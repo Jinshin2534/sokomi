@@ -11,6 +11,8 @@ export const MIN_REGION_COVERAGE = 0.3;
 export const MIN_OVERALL_COVERAGE = 0.25;
 
 const mean = (xs) => xs.reduce((a, b) => a + b, 0) / xs.length;
+// マスの値は負や1超えもありうる。平均してから 0〜1 に収める。
+const clampedMean = (xs) => Math.min(1, Math.max(0, mean(xs)));
 
 // マスはすべて同じ面積なので、全体 = 判定可能マスの単純平均。
 export function aggregate(wear, inSole, cols, rows) {
@@ -35,8 +37,8 @@ export function aggregate(wear, inSole, cols, rows) {
   const regions = REGIONS.map((reg, k) => {
     const { inside, values } = buckets[k];
     const coverage = inside ? values.length / inside : 0;
-    return { id: reg.id, label: reg.label, mean: coverage >= MIN_REGION_COVERAGE ? mean(values) : null, coverage };
+    return { id: reg.id, label: reg.label, mean: coverage >= MIN_REGION_COVERAGE ? clampedMean(values) : null, coverage };
   });
   const overallCoverage = insideTotal ? all.length / insideTotal : 0;
-  return { regions, overall: overallCoverage >= MIN_OVERALL_COVERAGE ? mean(all) : null, overallCoverage };
+  return { regions, overall: overallCoverage >= MIN_OVERALL_COVERAGE ? clampedMean(all) : null, overallCoverage };
 }

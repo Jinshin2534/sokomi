@@ -79,6 +79,15 @@ export function checkPoints(points) {
   }
 }
 
+// 内側の点が「つま先→かかと」の線のどちら側にあるか (1 / -1)。checkPoints の side() と同じ式。
+// 新品時と今とで符号が違えば、内側と外側を逆に打っている(結果が左右反転する)。
+export function pointsOrientation(points) {
+  const [toe, heel, inner] = points;
+  const ax = heel[0] - toe[0];
+  const ay = heel[1] - toe[1];
+  return ax * (inner[1] - toe[1]) - ay * (inner[0] - toe[0]) >= 0 ? 1 : -1;
+}
+
 export function pointsToSole(points) {
   checkPoints(points);
   return solveHomography(points, SOLE_TARGETS);

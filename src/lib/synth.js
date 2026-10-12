@@ -4,15 +4,18 @@ import { insideSole } from './mask.js';
 export const DEMO_POINTS = [[200, 50], [200, 750], [60, 295], [340, 295]];
 
 // 靴底を模した画像。v 方向に 30 本の溝(角の立った縞)。amp(u,v) は模様の残り具合 0〜1。
-export function makeSoleImage({ width = 400, height = 800, points = DEMO_POINTS, amp = () => 1, gain = 1 } = {}) {
+// shape(u,v) は靴底の形(既定はテンプレートどおり)、background は背景の明るさ。
+export function makeSoleImage({
+  width = 400, height = 800, points = DEMO_POINTS, amp = () => 1, gain = 1, shape = insideSole, background = 40,
+} = {}) {
   const H = pointsToSole(points);
   const data = new Uint8ClampedArray(width * height * 4);
   const k4 = Math.tanh(4);
   for (let py = 0; py < height; py++) {
     for (let px = 0; px < width; px++) {
       const [u, v] = applyHomography(H, [px + 0.5, py + 0.5]);
-      let val = 40;
-      if (insideSole(u, v)) {
+      let val = background;
+      if (shape(u, v)) {
         const s = Math.tanh(4 * Math.sin(2 * Math.PI * v * 30)) / k4;
         val = 128 + 60 * amp(u, v) * s;
       }

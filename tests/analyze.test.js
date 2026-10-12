@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { analyze } from '../src/lib/analyze.js';
 import { makeSoleImage, transformPoints, DEMO_POINTS } from '../src/lib/synth.js';
+import { soleHalfWidth } from '../src/lib/mask.js';
 
 const worn = (u, v) => {
   if (v >= 0.68 && u >= 0.5) return 0; // かかと外: 模様が消えた
@@ -96,6 +97,33 @@ describe('analyze', () => {
     const res = analyze(base, DEMO_POINTS, boxBlur(base, 4, 3), DEMO_POINTS);
     expect(res.quality.level).not.toBe('高');
     expect(res.quality.reasons.join()).toContain('ピント');
+  });
+
+  it('今の写真で内側と外側を逆に打つと mirrored', () => {
+    const swapped = [DEMO_POINTS[0], DEMO_POINTS[1], DEMO_POINTS[3], DEMO_POINTS[2]];
+    expect(() => analyze(base, DEMO_POINTS, makeSoleImage({ amp: worn }), swapped)).toThrow('mirrored');
+  });
+
+  describe('実物の靴底がテンプレートと違う形 ＋ 背景の明るさが新品時と違う', () => {
+    const narrow = (u, v) => Math.abs(u - 0.5) <= soleHalfWidth(v) * 0.92;
+    const wide = (u, v) => Math.abs(u - 0.5) <= soleHalfWidth(v) * 1.08;
+    // 内側の土踏まずだけ 2割えぐれた左右非対称の靴底
+    const asym = (u, v) => {
+      const w = soleHalfWidth(v) * (u < 0.5 && v > 0.42 && v < 0.68 ? 0.8 : 1);
+      return Math.abs(u - 0.5) <= w;
+    };
+    for (const [name, shape] of [['幅0.92倍', narrow], ['幅1.08倍', wide], ['土踏まず非対称', asym]]) {
+      for (const [bgBase, bgNow] of [[40, 200], [200, 40]]) {
+        it(`${name}・背景 ${bgBase}→${bgNow}: 触っていない部位は 0.1 未満`, () => {
+          const b = makeSoleImage({ shape, background: bgBase });
+          const same = byId(analyze(b, DEMO_POINTS, makeSoleImage({ shape, background: bgNow }), DEMO_POINTS));
+          for (const v of Object.values(same)) expect(v).toBeLessThan(0.1);
+          const m = byId(analyze(b, DEMO_POINTS, makeSoleImage({ shape, background: bgNow, amp: worn }), DEMO_POINTS));
+          for (const id of ['ball', 'outerBall', 'arch', 'heelIn']) expect(m[id]).toBeLessThan(0.1);
+          expect(m.heelOut).toBeGreaterThan(0.8);
+        });
+      }
+    }
   });
 
   it('点が不正なら degenerate', () => {

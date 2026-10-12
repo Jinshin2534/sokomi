@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  SOLE_TARGETS, solveHomography, applyHomography, invertHomography, checkPoints, pointsToSole,
+  SOLE_TARGETS, solveHomography, applyHomography, invertHomography, checkPoints, pointsToSole, pointsOrientation,
 } from '../src/lib/homography.js';
 
 const PTS = [[200, 50], [200, 750], [60, 295], [340, 295]];
@@ -53,5 +53,18 @@ describe('homography', () => {
 
   it('幅の点がつま先より先なら degenerate', () => {
     expect(() => checkPoints([[200, 50], [200, 750], [60, 20], [340, 295]])).toThrow('degenerate');
+  });
+
+  it('pointsOrientation: 左右反転した配置では符号が逆', () => {
+    const mirrored = PTS.map(([x, y]) => [400 - x, y]);
+    const a = pointsOrientation(PTS);
+    const b = pointsOrientation(mirrored);
+    expect([1, -1]).toContain(a);
+    expect(b).toBe(-a);
+  });
+
+  it('pointsOrientation: 内側と外側を入れ替えても符号が逆', () => {
+    const swapped = [PTS[0], PTS[1], PTS[3], PTS[2]];
+    expect(pointsOrientation(swapped)).toBe(-pointsOrientation(PTS));
   });
 });
