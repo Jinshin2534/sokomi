@@ -16,5 +16,8 @@ export const pct = (w) => (w == null ? '判定不能' : `${Math.round(w * 100)}%
 export const fmtDate = (t) => new Date(t).toLocaleDateString('ja-JP');
 export const backButton = (label, onClick) => h('button', { class: 'back', type: 'button', onClick }, `← ${label}`);
 
+export const MIRRORED_ERROR =
+  '内側と外側の点が新品時と逆になっています。親指側を3番、小指側を4番で打ち直してください。';
+
 export const POINT_ERROR =
   '点の位置がおかしいようです。つま先とかかとを結ぶ線の両側に、内側と外側の点を打ってください。';

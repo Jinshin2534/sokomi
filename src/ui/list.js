@@ -5,7 +5,7 @@ function shoeCard(shoe, nav) {
   const last = shoe.checks.at(-1);
   return h('li', {},
     h('button', { class: 'shoe-card', type: 'button', onClick: () => nav.detail(shoe.id) },
-      h('img', { src: URL.createObjectURL(shoe.basePhoto), alt: '', onLoad: (e) => URL.revokeObjectURL(e.target.src) }),
+      h('img', { src: URL.createObjectURL(shoe.basePhoto), alt: '', onLoad: (e) => URL.revokeObjectURL(e.target.src), onError: (e) => URL.revokeObjectURL(e.target.src) }),
       h('span', { class: 'shoe-name' }, shoe.name),
       h('span', { class: 'shoe-wear' }, last ? `すり減り ${pct(last.overall)}` : 'まだチェックしていません')));
 }

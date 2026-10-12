@@ -10,7 +10,7 @@ export async function detailScreen(nav, id) {
   return h('main', { class: 'screen' },
     backButton('一覧へ', () => nav.list()),
     h('h2', {}, shoe.name),
-    h('img', { class: 'base-photo', src: URL.createObjectURL(shoe.basePhoto), alt: '新品時の靴底', onLoad: (e) => URL.revokeObjectURL(e.target.src) }),
+    h('img', { class: 'base-photo', src: URL.createObjectURL(shoe.basePhoto), alt: '新品時の靴底', onLoad: (e) => URL.revokeObjectURL(e.target.src), onError: (e) => URL.revokeObjectURL(e.target.src) }),
     h('p', { class: 'muted' }, `新品時の写真: ${fmtDate(shoe.createdAt)} に登録`),
     h('button', { class: 'primary', type: 'button', onClick: () => nav.check(id) }, '今の靴底をチェック'),
     h('h3', {}, 'これまでのチェック'),
@@ -22,7 +22,13 @@ export async function detailScreen(nav, id) {
       class: 'danger', type: 'button',
       onClick: async () => {
         if (!confirm(`「${shoe.name}」を削除しますか？ 新品時の写真も消えます。`)) return;
-        await deleteShoe(id);
+        try {
+          await deleteShoe(id);
+        } catch (e) {
+          console.error(e);
+          alert('削除できませんでした');
+          return;
+        }
         nav.list();
       },
     }, 'この靴を削除'));

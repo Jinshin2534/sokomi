@@ -1,4 +1,28 @@
 import { h } from './dom.js';
+import { pointsToSole, invertHomography, applyHomography } from '../lib/homography.js';
+import { soleHalfWidth } from '../lib/mask.js';
+
+const OUTLINE_STEPS = 100;
+
+// 4点から、解析が想定している靴底の輪郭を写真の画素座標で返す。点が不正なら null。
+function templateOutline(points) {
+  let inv;
+  try {
+    inv = invertHomography(pointsToSole(points));
+  } catch {
+    return null;
+  }
+  const out = [];
+  for (let k = 0; k <= OUTLINE_STEPS; k++) {
+    const v = k / OUTLINE_STEPS;
+    out.push(applyHomography(inv, [0.5 - soleHalfWidth(v), v]));
+  }
+  for (let k = OUTLINE_STEPS; k >= 0; k--) {
+    const v = k / OUTLINE_STEPS;
+    out.push(applyHomography(inv, [0.5 + soleHalfWidth(v), v]));
+  }
+  return out.every(([x, y]) => Number.isFinite(x) && Number.isFinite(y)) ? out : null;
+}
 
 export const POINT_LABELS = ['つま先の先端', 'かかとの先端', '内側(親指側)の一番広い所', '外側(小指側)の一番広い所'];
 export const POINT_COLORS = ['#d9480f', '#1c7ed6', '#2b8a3e', '#e8590c'];
@@ -21,9 +45,29 @@ export function createPointPicker(photoCanvas, { onChange } = {}) {
   };
   const hitRadius = () => (canvas.width / canvas.getBoundingClientRect().width) * 24;
 
+  function drawOutline(outline) {
+    ctx.save();
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    outline.forEach(([x, y], k) => (k ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
+    ctx.closePath();
+    // 暗い下敷き線の上に白線を重ねて、明るい背景でも暗い背景でも見えるように
+    const shown = canvas.getBoundingClientRect().width;
+    const px = shown > 0 ? canvas.width / shown : 1; // 表示1pxあたりの画素数
+    ctx.lineWidth = 4 * px;
+    ctx.strokeStyle = 'rgba(0,0,0,0.6)';
+    ctx.stroke();
+    ctx.lineWidth = 2 * px;
+    ctx.strokeStyle = '#fff';
+    ctx.stroke();
+    ctx.restore();
+  }
+
   function draw() {
     ctx.drawImage(photoCanvas, 0, 0);
     const rad = Math.max(6, canvas.width / 70);
+    const outline = points.length === 4 ? templateOutline(points) : null;
+    if (outline) drawOutline(outline);
     if (points.length >= 2) {
       ctx.save();
       ctx.setLineDash([rad, rad]);
@@ -52,7 +96,9 @@ export function createPointPicker(photoCanvas, { onChange } = {}) {
     hint.replaceChildren(
       points.length < 4
         ? h('span', {}, h('b', { style: `color:${POINT_COLORS[points.length]}` }, `${points.length + 1}. ${POINT_LABELS[points.length]}`), ' をタップ')
-        : '4点そろいました。ずれていたら点をドラッグして直せます',
+        : outline
+          ? '白い輪郭が靴底のふちに大体そろうよう、点をドラッグして調整してください'
+          : '点の位置がおかしいようです',
     );
   }
 

@@ -15,7 +15,7 @@ function show(el) {
   window.scrollTo(0, 0);
 }
 
-// 非同期の画面遷移が失敗したら、握りつぶさずエラー画面を出す。
+// 画面遷移が失敗したら(同期・非同期とも)、握りつぶさずエラー画面を出す。
 const safe = (fn) => async (...args) => {
   try {
     await fn(...args);
@@ -32,13 +32,13 @@ const nav = {
   register: () => show(registerScreen(nav)),
   detail: safe(async (id) => show(await detailScreen(nav, id))),
   check: safe(async (id) => show(await checkScreen(nav, id))),
-  result: (ctx) => show(resultScreen(nav, ctx)),
+  result: safe((ctx) => show(resultScreen(nav, ctx))),
   // 保存はしない。合成した「かかと外側がすり減った靴」で結果画面を見せる。
-  demo: () => {
+  demo: safe(() => {
     const result = analyze(makeSoleImage(), DEMO_POINTS, makeSoleImage({ amp: DEMO_WEAR }), DEMO_POINTS);
     window.__app.lastResult = result;
     show(resultScreen(nav, { shoe: { name: 'サンプル（かかと外側がすり減った靴）' }, result }));
-  },
+  }),
 };
 
 // ヘッドレス検証用

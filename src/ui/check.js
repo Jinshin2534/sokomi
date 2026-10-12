@@ -1,4 +1,4 @@
-import { h, backButton, POINT_ERROR } from './dom.js';
+import { h, backButton, POINT_ERROR, MIRRORED_ERROR } from './dom.js';
 import { photoStep } from './photoStep.js';
 import { blobToPhoto } from './image.js';
 import { getShoe, putShoe } from '../lib/storage.js';
@@ -25,7 +25,8 @@ export async function checkScreen(nav, id) {
     try {
       result = analyze(base.image, shoe.basePoints, ready.photo.image, ready.points);
     } catch (e) {
-      fail(e.message === 'degenerate' ? POINT_ERROR : '解析に失敗しました。写真を選び直してください。');
+      const known = { degenerate: POINT_ERROR, mirrored: MIRRORED_ERROR };
+      fail(known[e.message] ?? '解析に失敗しました。写真を選び直してください。');
       return;
     }
     const check = { at: Date.now(), overall: result.overall, regions: result.regions, quality: result.quality };

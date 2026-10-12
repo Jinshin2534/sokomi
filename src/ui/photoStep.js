@@ -14,6 +14,7 @@ export function photoStep({ title, onReady }) {
     input.value = ''; // 同じファイルを選び直しても change が発火するように
     if (!file) return;
     const mine = ++seq;
+    slot.replaceChildren(); // 読み込み中に前の写真の点が onReady を呼ばないよう、先に外す
     onReady(null);
     try {
       const photo = await fileToPhoto(file);

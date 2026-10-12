@@ -4,9 +4,11 @@ import { soleHalfWidth } from '../lib/mask.js';
 
 const SCALE = 2;
 
+// 靴底の輪郭を今のパスに足す。beginPath はしない(呼ぶ側で始める)。
+// ここで beginPath すると、先に足した外枠の rect が消えて「靴底の外」の塗りが内側に化ける。
 function solePath(ctx, W, H) {
-  ctx.beginPath();
-  for (let k = 0; k <= 100; k++) {
+  ctx.moveTo(0.5 * W, 0);
+  for (let k = 1; k <= 100; k++) {
     const v = k / 100;
     ctx.lineTo((0.5 - soleHalfWidth(v)) * W, v * H);
   }
@@ -81,6 +83,7 @@ export function renderHeatmap(result) {
   solePath(ctx, W, H);
   ctx.fillStyle = 'rgba(255,255,255,0.75)';
   ctx.fill('evenodd');
+  ctx.beginPath();
   solePath(ctx, W, H);
   ctx.strokeStyle = 'rgba(60,50,40,0.5)';
   ctx.lineWidth = 2;

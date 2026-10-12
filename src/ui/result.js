@@ -28,5 +28,6 @@ export function resultScreen(nav, { shoe, result }) {
       h('li', { class: 'region' }, h('span', { class: 'region-name' }, r.label), h('span', { class: 'region-num' }, pct(r.mean)), bar(r.mean)))),
     h('p', { class: 'note' },
       '模様のくっきり具合の減り方から推定した値で、溝の深さを測ったものではありません。',
-      'グレーの斜線は、新品時に模様がなく比べられない場所です。'));
+      'グレーの斜線は、新品時に模様がなく比べられない場所です。',
+      '靴底が黒っぽい・汚れている・小石が挟まっていると、すり減りが少なめに出ることがあります。'));
 }
