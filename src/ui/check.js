@@ -16,17 +16,29 @@ export async function checkScreen(nav, id) {
     run.disabled = true;
     run.textContent = '解析中…';
     await new Promise((r) => setTimeout(r, 30)); // ボタンの表示を先に更新する
-    try {
-      const result = analyze(base.image, shoe.basePoints, ready.photo.image, ready.points);
-      shoe.checks.push({ at: Date.now(), overall: result.overall, regions: result.regions, quality: result.quality });
-      await putShoe(shoe);
-      window.__app.lastResult = result;
-      nav.result({ shoe, result });
-    } catch (e) {
-      msg.textContent = e.message === 'degenerate' ? POINT_ERROR : '解析に失敗しました。写真を選び直してください。';
+    const fail = (text) => {
+      msg.textContent = text;
       run.disabled = false;
       run.textContent = '新品時と比べる';
+    };
+    let result;
+    try {
+      result = analyze(base.image, shoe.basePoints, ready.photo.image, ready.points);
+    } catch (e) {
+      fail(e.message === 'degenerate' ? POINT_ERROR : '解析に失敗しました。写真を選び直してください。');
+      return;
     }
+    const check = { at: Date.now(), overall: result.overall, regions: result.regions, quality: result.quality };
+    const updated = { ...shoe, checks: [...shoe.checks, check] };
+    try {
+      await putShoe(updated);
+    } catch (e) {
+      console.error(e);
+      fail('結果を保存できませんでした。ブラウザの空き容量を確認してください。');
+      return;
+    }
+    window.__app.lastResult = result;
+    nav.result({ shoe: updated, result });
   });
   return h('main', { class: 'screen' },
     backButton('戻る', () => nav.detail(id)),

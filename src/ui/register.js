@@ -19,16 +19,25 @@ export function registerScreen(nav) {
       return;
     }
     save.disabled = true;
-    const shoe = {
-      id: crypto.randomUUID(),
-      name: name.value.trim(),
-      createdAt: Date.now(),
-      basePhoto: await canvasToBlob(ready.photo.canvas),
-      basePoints: ready.points,
-      checks: [],
-    };
-    await putShoe(shoe);
-    nav.detail(shoe.id);
+    msg.textContent = '';
+    try {
+      const basePhoto = await canvasToBlob(ready.photo.canvas);
+      if (!basePhoto) throw new Error('blob');
+      const shoe = {
+        id: crypto.randomUUID(),
+        name: name.value.trim(),
+        createdAt: Date.now(),
+        basePhoto,
+        basePoints: ready.points,
+        checks: [],
+      };
+      await putShoe(shoe);
+      nav.detail(shoe.id);
+    } catch (e) {
+      console.error(e);
+      msg.textContent = '保存できませんでした。ブラウザの空き容量やプライベートモードを確認してください。';
+      update();
+    }
   });
   return h('main', { class: 'screen' },
     backButton('一覧へ', () => nav.list()),

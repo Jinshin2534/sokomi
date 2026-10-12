@@ -1,4 +1,5 @@
 import './style.css';
+import { h } from './ui/dom.js';
 import { analyze } from './lib/analyze.js';
 import { makeSoleImage, DEMO_POINTS, DEMO_WEAR } from './lib/synth.js';
 import * as storage from './lib/storage.js';
@@ -14,11 +15,23 @@ function show(el) {
   window.scrollTo(0, 0);
 }
 
+// 非同期の画面遷移が失敗したら、握りつぶさずエラー画面を出す。
+const safe = (fn) => async (...args) => {
+  try {
+    await fn(...args);
+  } catch (e) {
+    console.error(e);
+    show(h('main', { class: 'screen' },
+      h('p', { class: 'error' }, '読み込みに失敗しました。このブラウザでは保存機能が使えない可能性があります。'),
+      h('button', { class: 'primary', type: 'button', onClick: () => nav.list() }, '一覧へ戻る')));
+  }
+};
+
 const nav = {
-  list: async () => show(await listScreen(nav)),
+  list: safe(async () => show(await listScreen(nav))),
   register: () => show(registerScreen(nav)),
-  detail: async (id) => show(await detailScreen(nav, id)),
-  check: async (id) => show(await checkScreen(nav, id)),
+  detail: safe(async (id) => show(await detailScreen(nav, id))),
+  check: safe(async (id) => show(await checkScreen(nav, id))),
   result: (ctx) => show(resultScreen(nav, ctx)),
   // 保存はしない。合成した「かかと外側がすり減った靴」で結果画面を見せる。
   demo: () => {

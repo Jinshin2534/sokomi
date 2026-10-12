@@ -5,7 +5,7 @@ export const POINT_COLORS = ['#d9480f', '#1c7ed6', '#2b8a3e', '#e8590c'];
 
 // 写真の上を順番にタップして4点を打つ。打った点はドラッグで直せる。
 export function createPointPicker(photoCanvas, { onChange } = {}) {
-  const canvas = h('canvas', { class: 'picker' });
+  const canvas = h('canvas', { class: 'picker', role: 'img', 'aria-label': '靴底の写真。4点をタップして指定' });
   canvas.width = photoCanvas.width;
   canvas.height = photoCanvas.height;
   const ctx = canvas.getContext('2d');
@@ -70,7 +70,8 @@ export function createPointPicker(photoCanvas, { onChange } = {}) {
   });
   canvas.addEventListener('pointermove', (e) => {
     if (drag < 0) return;
-    points[drag] = toImage(e);
+    const [x, y] = toImage(e);
+    points[drag] = [Math.min(Math.max(x, 0), canvas.width), Math.min(Math.max(y, 0), canvas.height)];
     draw();
   });
   const endDrag = () => {

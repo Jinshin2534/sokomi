@@ -39,7 +39,7 @@ const clamp01 = (x) => Math.min(1, Math.max(0, x));
 
 // デモ用: かかと外側ほど強く、つま先も少しすり減った靴
 export function DEMO_WEAR(u, v) {
-  const heel = clamp01((v - 0.6) / 0.4) * clamp01((u - 0.35) / 0.5);
-  const toe = v < 0.15 ? 0.3 : 0;
-  return clamp01(1 - 0.9 * heel - toe);
+  const heel = clamp01((v - 0.55) / 0.3) * clamp01((u - 0.3) / 0.4);
+  const toe = v < 0.15 ? 0.25 : 0;
+  return clamp01(1 - 0.95 * heel - toe);
 }
