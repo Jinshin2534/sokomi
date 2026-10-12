@@ -1,6 +1,6 @@
 // 新品時に模様がほとんど無いマスは比べようがないので判定不能にする。
 // しきい値 = max(絶対下限, 靴底内の基準の模様の強さの中央値 × 比率)
-export const MIN_TEXTURE_ABS = 0.15;
+export const MIN_TEXTURE_ABS = 0.3; // 靴底の縁の輪郭がマスに漏れ込む量(実測 最大0.24)を超え、本物の模様(実測 約1.5〜2)よりずっと下
 export const MIN_TEXTURE_REL = 0.25;
 
 function median(xs) {
