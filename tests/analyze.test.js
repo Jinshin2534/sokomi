@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { analyze } from '../src/lib/analyze.js';
-import { makeSoleImage, transformPoints, DEMO_POINTS } from '../src/lib/synth.js';
+import { makeSoleImage, transformPoints, DEMO_POINTS, DEMO_WEAR } from '../src/lib/synth.js';
 import { soleHalfWidth } from '../src/lib/mask.js';
 
 const worn = (u, v) => {
@@ -97,6 +97,30 @@ describe('analyze', () => {
     const res = analyze(base, DEMO_POINTS, boxBlur(base, 4, 3), DEMO_POINTS);
     expect(res.quality.level).not.toBe('高');
     expect(res.quality.reasons.join()).toContain('ピント');
+  });
+
+  it('すり減っていてもピントが合っていればピントの理由は出ない', () => {
+    for (const amp of [worn, DEMO_WEAR, () => 0]) {
+      const res = analyze(base, DEMO_POINTS, makeSoleImage({ amp }), DEMO_POINTS);
+      expect(res.quality.reasons.join()).not.toContain('ピント');
+    }
+  });
+
+  it('1.6倍明るいと「少し明るい」で信頼度は中', () => {
+    const res = analyze(base, DEMO_POINTS, makeSoleImage({ gain: 1.6 }), DEMO_POINTS);
+    expect(res.quality.reasons.join()).toContain('少し明るい');
+    expect(res.quality.level).toBe('中');
+  });
+
+  it('白飛びはどちらの写真か分けて返す', () => {
+    const blown = makeSoleImage({ gain: 4 }); // 靴底の画素がほぼ全部 250 以上
+    const now = analyze(base, DEMO_POINTS, blown, DEMO_POINTS).quality.reasons.join();
+    expect(now).toContain('今の写真');
+    expect(now).toContain('白飛び');
+    const old = analyze(blown, DEMO_POINTS, base, DEMO_POINTS).quality;
+    expect(old.reasons.join()).toContain('新品時の写真');
+    expect(old.reasons.join()).toContain('白飛び');
+    expect(old.level).not.toBe('高');
   });
 
   it('今の写真で内側と外側を逆に打つと mirrored', () => {
